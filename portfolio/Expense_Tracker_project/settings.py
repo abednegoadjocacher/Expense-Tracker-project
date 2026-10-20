@@ -260,7 +260,7 @@ TAILWIND_APP_NAME = 'theme'
 # Node.js binary path for Tailwind CSS (only needed to rebuild CSS locally)
 # NPM_BIN_PATH = os.getenv("NPM_BIN_PATH", r"C:\Program Files\nodejs\npm.cmd") for local Windows development
 #  NPM_BIN_PATH = os.getenv("NPM_BIN_PATH", "/usr/local/bin/npm")
-NPM_BIN_PATH = os.getenv("NPM_BIN_PATH", "npm")
+NPM_BIN_PATH = "/usr/bin/npm"
 
 # Adding browser reload functionality in development mode
 # To take care of automatic refreshing of the page
