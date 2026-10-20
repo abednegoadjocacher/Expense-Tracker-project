@@ -1,0 +1,48 @@
+{% extends "Expense_app/base.html" %}
+{% block title %}Delete {{ category.name }}{% endblock title %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="breadcrumbs text-sm mb-2">
+        <ul>
+            <li><a href="{% url 'category_list' %}">Categories</a></li>
+            <li>Delete {{ category.name }}</li>
+        </ul>
+    </div>
+    <div class="card bg-base-100 shadow-sm">
+        <form method="post" class="card-body" novalidate>
+            {% csrf_token %}
+            <h1 class="card-title text-xl">Delete “{{ category.name }}”?</h1>
+
+            {% if form.needs_target %}
+                <div class="alert alert-warning text-sm">
+                    <span>
+                        This category has <strong>{{ expense_count }}</strong> expense{{ expense_count|pluralize }}
+                        and <strong>{{ plan_count }}</strong> planned expense{{ plan_count|pluralize }}.
+                        Choose another category to move them to before deleting.
+                    </span>
+                </div>
+                {% if form.fields.move_to.queryset.exists %}
+                    {% include "Expense_app/partials/_field.html" with field=form.move_to %}
+                {% else %}
+                    <div class="alert alert-error text-sm">
+                        <span>You don't have another category to move these items into. <a href="{% url 'category_create' %}" class="link font-semibold">Create another category</a> first.</span>
+                    </div>
+                {% endif %}
+            {% else %}
+                <p class="text-sm text-base-content/70">
+                    This category has no expenses or plans attached. This action cannot be undone.
+                </p>
+            {% endif %}
+
+            <div class="card-actions justify-end mt-4">
+                <a href="{% url 'category_list' %}" class="btn btn-ghost">Cancel</a>
+                {% if not form.needs_target or form.fields.move_to.queryset.exists %}
+                    <button type="submit" class="btn btn-error">Delete category</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+

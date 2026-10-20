@@ -1,0 +1,37 @@
+{% extends "Expense_app/base.html" %}
+{% block title %}Log in{% endblock title %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-6">
+    <div class="card bg-base-100 shadow-sm">
+        <form method="post" class="card-body space-y-2" novalidate>
+            {% csrf_token %}
+            <h1 class="card-title text-2xl">Welcome back</h1>
+            <p class="text-sm text-base-content/60">Sign in to view your expenses, categories, and budgets.</p>
+
+            {% for error in form.non_field_errors %}
+                <div class="alert alert-error text-sm">{{ error }}</div>
+            {% endfor %}
+
+            {% for field in form %}
+                {% include "Expense_app/partials/_field.html" with field=field %}
+            {% endfor %}
+
+            {% if next %}
+                <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            <div class="flex items-center justify-between text-xs pt-1">
+                <a href="{% url 'password_reset' %}" class="link link-hover">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-full mt-2">Log in</button>
+
+            <p class="text-center text-sm text-base-content/70 pt-2">
+                New here? <a href="{% url 'signup' %}" class="link link-primary font-medium">Create an account</a>
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+

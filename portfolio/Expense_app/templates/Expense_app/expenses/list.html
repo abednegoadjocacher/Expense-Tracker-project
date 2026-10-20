@@ -1,0 +1,67 @@
+{% extends "Expense_app/base.html" %}
+{% load expense_tags %}
+{% block title %}Expenses{% endblock title %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+    <h1 class="text-2xl font-bold">Expenses</h1>
+    <div class="flex gap-2">
+        <a href="{% url 'expense_export' %}?{{ request.GET.urlencode }}" class="btn btn-sm btn-ghost">⬇ Export CSV</a>
+        <a href="{% url 'expense_create' %}" class="btn btn-sm btn-primary">+ Add expense</a>
+    </div>
+</div>
+
+<form method="get" class="card bg-base-100 shadow-sm mb-4">
+    <div class="card-body p-4 grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+        <div class="col-span-2">{% include "Expense_app/partials/_field.html" with field=filter_form.q %}</div>
+        {% include "Expense_app/partials/_field.html" with field=filter_form.category %}
+        {% include "Expense_app/partials/_field.html" with field=filter_form.payment_method %}
+        {% include "Expense_app/partials/_field.html" with field=filter_form.start %}
+        {% include "Expense_app/partials/_field.html" with field=filter_form.end %}
+        <div class="col-span-2 md:col-span-6 flex gap-2 justify-end">
+            {% if is_filtered %}<a href="{% url 'expense_list' %}" class="btn btn-sm btn-ghost">Clear</a>{% endif %}
+            <button class="btn btn-sm btn-neutral">Apply filters</button>
+        </div>
+    </div>
+</form>
+
+<div class="stats shadow-sm bg-base-100 mb-4 w-full sm:w-auto">
+    <div class="stat py-3">
+        <div class="stat-title">{% if is_filtered %}Filtered total{% else %}Total (all expenses){% endif %}</div>
+        <div class="stat-value text-2xl text-primary">{% money filtered_total %}</div>
+        <div class="stat-desc">{{ filtered_count }} expense{{ filtered_count|pluralize }}</div>
+    </div>
+</div>
+
+<div class="card bg-base-100 shadow-sm overflow-x-auto">
+    <table class="table">
+        <thead>
+            <tr><th>Date</th><th>Description</th><th>Category</th><th class="hidden md:table-cell">Method</th><th class="text-right">Amount</th><th class="w-px"></th></tr>
+        </thead>
+        <tbody>
+        {% for e in page_obj %}
+            <tr class="hover:bg-base-200/50">
+                <td class="whitespace-nowrap">{{ e.date|date:"j M Y" }}</td>
+                <td>
+                    <span class="font-medium">{{ e.description }}</span>
+                    {% if e.notes %}<p class="text-xs opacity-60 line-clamp-1">{{ e.notes }}</p>{% endif %}
+                </td>
+                <td><span class="badge badge-ghost gap-1 whitespace-nowrap"><span class="inline-block w-2 h-2 rounded-full" style="background-color: {{ e.category.color }}"></span>{{ e.category.name }}</span></td>
+                <td class="hidden md:table-cell text-sm opacity-70">{{ e.get_payment_method_display }}</td>
+                <td class="text-right font-semibold whitespace-nowrap">{% money e.amount %}</td>
+                <td class="whitespace-nowrap">
+                    <a href="{% url 'expense_edit' e.pk %}" class="btn btn-ghost btn-xs">Edit</a>
+                    <a href="{% url 'expense_delete' e.pk %}" class="btn btn-ghost btn-xs text-error">Delete</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="text-center py-10 opacity-60">
+                {% if is_filtered %}No expenses match these filters.{% else %}No expenses yet. <a href="{% url 'expense_create' %}" class="link link-primary">Add your first one</a>.{% endif %}
+            </td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "Expense_app/partials/_pagination.html" %}
+{% endblock content %}
+

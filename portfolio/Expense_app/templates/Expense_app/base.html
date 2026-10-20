@@ -1,0 +1,134 @@
+{% load static tailwind_tags expense_tags %}<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Track, plan and understand your daily expenses.">
+    <title>{% block title %}Expense Tracker{% endblock title %} · Expense Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💰</text></svg>">
+    <script>
+        // Apply the saved theme before paint to avoid a flash.
+        (function () {
+            var t = localStorage.getItem("theme");
+            if (!t) t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", t);
+        })();
+    </script>
+    {% tailwind_css %}
+</head>
+
+<body class="min-h-screen flex flex-col bg-base-200 text-base-content">
+
+{% if user.is_authenticated %}
+<header class="navbar bg-base-100 shadow-sm sticky top-0 z-30 px-2 sm:px-4">
+    <div class="navbar-start">
+        <div class="dropdown lg:hidden">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-square" aria-label="Open menu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </div>
+            <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-40 mt-3 w-56 p-2 shadow">
+                {% include "Expense_app/partials/_nav_links.html" %}
+            </ul>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-ghost text-lg font-bold gap-1">💰 <span class="hidden sm:inline">Expense Tracker</span></a>
+    </div>
+    <nav class="navbar-center hidden lg:flex" aria-label="Main">
+        <ul class="menu menu-horizontal px-1 gap-1">
+            {% include "Expense_app/partials/_nav_links.html" %}
+        </ul>
+    </nav>
+    <div class="navbar-end gap-1">
+        <a href="{% url 'expense_create' %}" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span class="hidden sm:inline">Add expense</span>
+        </a>
+
+        <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-circle" aria-label="Notifications">
+                <div class="indicator">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    {% if unread_notifications_count %}<span class="badge badge-xs badge-error indicator-item">{{ unread_notifications_count }}</span>{% endif %}
+                </div>
+            </div>
+            <div tabindex="0" class="dropdown-content card card-sm bg-base-100 z-40 mt-3 w-80 shadow-lg">
+                <div class="card-body">
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold">Alerts</span>
+                        {% if unread_notifications_count %}
+                        <form method="post" action="{% url 'notification_mark_all_read' %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button class="link link-primary text-xs">Mark all read</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% for n in recent_notifications %}
+                        <a href="{% url 'notification_list' %}" class="block rounded-lg p-2 hover:bg-base-200">
+                            <p class="text-sm font-medium {% if n.level == 'danger' %}text-error{% elif n.level == 'warning' %}text-warning{% endif %}">{{ n.title }}</p>
+                            <p class="text-xs opacity-60">{{ n.created_at|timesince }} ago</p>
+                        </a>
+                    {% empty %}
+                        <p class="text-sm opacity-60 py-2">You're all caught up 🎉</p>
+                    {% endfor %}
+                    <a href="{% url 'notification_list' %}" class="btn btn-sm btn-ghost">View all</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar avatar-placeholder" aria-label="Account menu">
+                <div class="bg-neutral text-neutral-content w-9 rounded-full">
+                    <span class="text-sm uppercase">{{ user.username|slice:":1" }}</span>
+                </div>
+            </div>
+            <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-40 mt-3 w-52 p-2 shadow">
+                <li class="menu-title">{{ user.username }}</li>
+                <li><a href="{% url 'settings' %}">Settings &amp; budgets</a></li>
+                <li><a href="{% url 'password_change' %}">Change password</a></li>
+                <li><button type="button" id="theme-toggle">Toggle dark mode</button></li>
+                {% if user.is_staff %}<li><a href="{% url 'admin:index' %}">Admin</a></li>{% endif %}
+                <li>
+                    <form method="post" action="{% url 'logout' %}" class="p-0">{% csrf_token %}
+                        <button type="submit" class="w-full text-left px-2 py-1">Log out</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header>
+{% else %}
+<header class="navbar bg-base-100 shadow-sm sticky top-0 z-30 px-2 sm:px-6">
+    <div class="navbar-start">
+        <a href="{% url 'homepage' %}" class="btn btn-ghost text-lg font-bold gap-1">💰 <span>Expense Tracker</span></a>
+    </div>
+    <div class="navbar-end gap-2">
+        <button type="button" id="theme-toggle" class="btn btn-ghost btn-sm btn-square" aria-label="Toggle dark mode" title="Toggle dark mode">🌓</button>
+        <a href="{% url 'login' %}" class="btn btn-ghost btn-sm">Log in</a>
+        <a href="{% url 'signup' %}" class="btn btn-primary btn-sm">Sign up</a>
+    </div>
+</header>
+{% endif %}
+
+<main class="flex-1 w-full {% block main_class %}max-w-7xl mx-auto px-3 sm:px-6 py-6{% endblock main_class %}">
+    {% include "Expense_app/partials/_messages.html" %}
+    {% block content %}
+    {% endblock content %}
+</main>
+
+<footer class="footer footer-center p-4 text-base-content/60 text-sm">
+    <p>&copy; {% now "Y" %} Expense Tracker. All rights reserved.</p>
+</footer>
+
+<script>
+    (function () {
+        var btn = document.getElementById("theme-toggle");
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+            var next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", next);
+            localStorage.setItem("theme", next);
+        });
+    })();
+</script>
+{% block scripts %}{% endblock scripts %}
+</body>
+</html>

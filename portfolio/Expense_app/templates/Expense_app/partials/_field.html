@@ -1,0 +1,15 @@
+{% load expense_tags %}{% if field.is_hidden %}{{ field }}{% else %}
+<fieldset class="fieldset {{ class|default:'' }}">
+    {% if field.widget_type == 'checkbox' %}
+        <label class="label cursor-pointer justify-start gap-3 text-base-content">
+            {{ field|style_field }} <span>{{ field.label }}</span>
+        </label>
+    {% else %}
+        <label class="fieldset-legend pb-1" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="text-error">*</span>{% endif %}</label>
+        {{ field|style_field }}
+    {% endif %}
+    {% if field.help_text %}<p class="label whitespace-normal">{{ field.help_text|safe }}</p>{% endif %}
+    {% for error in field.errors %}<p class="text-error text-sm">{{ error }}</p>{% endfor %}
+</fieldset>
+{% endif %}
+

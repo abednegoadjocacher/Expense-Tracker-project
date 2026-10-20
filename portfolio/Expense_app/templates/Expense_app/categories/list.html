@@ -1,0 +1,105 @@
+{% extends "Expense_app/base.html" %}
+{% load expense_tags %}
+{% block title %}Categories{% endblock title %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">Categories &amp; budgets</h1>
+        <p class="text-sm text-base-content/60">Track spending by category and set monthly budgets to receive alerts.</p>
+    </div>
+    <a href="{% url 'category_create' %}" class="btn btn-primary btn-sm">+ New category</a>
+</div>
+
+<section class="stats stats-vertical sm:stats-horizontal shadow-sm bg-base-100 w-full mb-6">
+    <div class="stat">
+        <div class="stat-title">This month ({{ today|date:"F Y" }})</div>
+        <div class="stat-value text-2xl text-primary">{% money month_total %}</div>
+        <div class="stat-desc">Across {{ rows|length }} categor{{ rows|length|pluralize:"y,ies" }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-title">Total spent (all time)</div>
+        <div class="stat-value text-2xl">{% money all_time_total %}</div>
+        <div class="stat-desc">Cumulative across all categories</div>
+    </div>
+</section>
+
+{% if rows %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for r in rows %}
+    {% with m=r.month a=r.all_time cat=r.month.category %}
+    <article class="card bg-base-100 shadow-sm {% if m.is_flagged %}border-l-4 {% if m.status == 'over' %}border-error{% else %}border-warning{% endif %}{% endif %}">
+        <div class="card-body p-5">
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="inline-block w-3.5 h-3.5 rounded-full shrink-0" style="background-color: {{ cat.color }}"></span>
+                    <h2 class="card-title text-lg truncate">
+                        <a href="{% url 'expense_list' %}?category={{ cat.pk }}" class="link link-hover">{{ cat.name }}</a>
+                    </h2>
+                </div>
+                <div class="flex flex-wrap gap-1 justify-end">
+                    {% if m.status == 'over' %}
+                        <span class="badge badge-error badge-sm">Over budget</span>
+                    {% elif m.status == 'warning' %}
+                        <span class="badge badge-warning badge-sm">{{ m.budget_pct|floatformat:0 }}% used</span>
+                    {% endif %}
+                    {% if m.is_spike %}
+                        <span class="badge badge-info badge-sm" title="Higher than recent monthly average ({% money m.average %})">Higher than usual</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-3 space-y-2">
+                <div class="flex items-baseline justify-between text-sm">
+                    <span class="text-base-content/70">This month ({{ m.count }} expense{{ m.count|pluralize }})</span>
+                    <span class="font-semibold text-base">
+                        {% money m.total %}
+                        {% if m.budget %}
+                            <span class="text-xs font-normal text-base-content/60">/ {% money m.budget %}</span>
+                        {% endif %}
+                    </span>
+                </div>
+
+                {% if m.budget %}
+                    <progress class="progress {{ m.status|budget_class }} w-full h-2" value="{{ m.budget_pct|clamp_pct|stringformat:'.1f' }}" max="100"></progress>
+                    <p class="text-xs text-base-content/60">
+                        {% if m.remaining >= 0 %}
+                            {% money m.remaining %} remaining ({{ m.budget_pct|floatformat:0 }}% used)
+                        {% else %}
+                            <span class="text-error font-medium">{% money m.remaining|cut:"-" %} over budget ({{ m.budget_pct|floatformat:0 }}%)</span>
+                        {% endif %}
+                    </p>
+                {% else %}
+                    <p class="text-xs text-base-content/60">
+                        No monthly budget set · <a href="{% url 'category_edit' cat.pk %}" class="link link-primary">Set budget</a>
+                    </p>
+                {% endif %}
+            </div>
+
+            <div class="divider my-2"></div>
+
+            <div class="flex items-center justify-between text-xs text-base-content/70">
+                <span>All time: <strong class="text-base-content">{% if a %}{% money a.total %}{% else %}{% money 0 %}{% endif %}</strong> ({% if a %}{{ a.count }}{% else %}0{% endif %} total, {% if a %}{{ a.share|floatformat:0 }}{% else %}0{% endif %}%)</span>
+                <div class="flex gap-1">
+                    <a href="{% url 'expense_list' %}?category={{ cat.pk }}" class="btn btn-ghost btn-xs">Expenses</a>
+                    <a href="{% url 'category_edit' cat.pk %}" class="btn btn-ghost btn-xs">Edit</a>
+                    <a href="{% url 'category_delete' cat.pk %}" class="btn btn-ghost btn-xs text-error">Delete</a>
+                </div>
+            </div>
+        </div>
+    </article>
+    {% endwith %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="card bg-base-100 shadow-sm">
+    <div class="card-body text-center py-12">
+        <p class="text-base-content/60 mb-4">You don't have any categories yet.</p>
+        <div>
+            <a href="{% url 'category_create' %}" class="btn btn-primary btn-sm">Create your first category</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock content %}
+

@@ -1,0 +1,14 @@
+{% extends "Expense_app/base.html" %}
+{% block title %}Page not found{% endblock title %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-12 text-center space-y-4">
+    <p class="text-6xl font-extrabold text-primary">404</p>
+    <h1 class="text-2xl font-bold">Page not found</h1>
+    <p class="text-base-content/70">The page you're looking for doesn't exist or was moved.</p>
+    <div>
+        <a href="{% url 'homepage' %}" class="btn btn-primary">Go home</a>
+    </div>
+</div>
+{% endblock content %}
+

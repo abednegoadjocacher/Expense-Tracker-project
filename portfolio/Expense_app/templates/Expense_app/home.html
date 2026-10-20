@@ -1,0 +1,55 @@
+{% extends "Expense_app/base.html" %}
+{% block title %}Track, plan &amp; control your daily expenses{% endblock title %}
+
+{% block content %}
+<section class="hero py-10 lg:py-16">
+    <div class="hero-content text-center max-w-3xl">
+        <div>
+            <span class="badge badge-primary badge-outline mb-4">Personal Finance &amp; Budgeting</span>
+            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+                Know where every dollar goes — before the month runs out.
+            </h1>
+            <p class="py-6 text-lg text-base-content/70 max-w-2xl mx-auto">
+                Keep daily expenses, see your total spending overall and by category, plan upcoming bills, and get notified automatically when any category spikes or nears its budget.
+            </p>
+            <div class="flex flex-wrap justify-center gap-3">
+                <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">Get started free</a>
+                <a href="{% url 'login' %}" class="btn btn-outline btn-lg">Sign in</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 my-8">
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="text-3xl mb-2">📊</div>
+            <h2 class="card-title">Total &amp; category breakdowns</h2>
+            <p class="text-sm text-base-content/70">
+                See your all-time total, monthly spend, daily trends, and exact share for every category at a glance, with instant CSV export.
+            </p>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="text-3xl mb-2">🔔</div>
+            <h2 class="card-title">Higher-expense alerts</h2>
+            <p class="text-sm text-base-content/70">
+                Set overall and per-category monthly budgets. Get in-app and optional email alerts when a category exceeds your threshold or spikes above your 3-month average.
+            </p>
+        </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="text-3xl mb-2">🗓️</div>
+            <h2 class="card-title">Plan upcoming expenses</h2>
+            <p class="text-sm text-base-content/70">
+                Schedule one-off or recurring bills (weekly, monthly, yearly), see your projected month-end total, and convert plans into recorded expenses in one click.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+

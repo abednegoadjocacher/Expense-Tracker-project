@@ -1,0 +1,23 @@
+{% extends "Expense_app/base.html" %}
+{% load expense_tags %}
+{% block title %}Delete {{ kind }}{% endblock title %}
+
+{% block content %}
+<div class="max-w-md mx-auto card bg-base-100 shadow-sm">
+    <form method="post" class="card-body">
+        {% csrf_token %}
+        <h1 class="card-title">Delete this {{ kind }}?</h1>
+        <p>
+            <span class="font-semibold">{% if kind == 'plan' %}{{ object.title }}{% else %}{{ object.description }}{% endif %}</span>
+            — {% money object.amount %}
+            ({% if kind == 'plan' %}due {{ object.due_date|date:"j M Y" }}{% else %}{{ object.date|date:"j M Y" }}{% endif %})
+        </p>
+        <p class="text-sm opacity-70">This can't be undone.</p>
+        <div class="card-actions justify-end mt-4">
+            <a href="{% url cancel_url %}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-error">Delete</button>
+        </div>
+    </form>
+</div>
+{% endblock content %}
+

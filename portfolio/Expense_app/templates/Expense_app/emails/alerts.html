@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spending alerts</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937; line-height: 1.5; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <h2 style="margin-top: 0;">💰 Expense Tracker</h2>
+    <p>Hello {{ user.first_name|default:user.username }},</p>
+    <p>You have <strong>{{ notifications|length }}</strong> new spending alert{{ notifications|length|pluralize }}:</p>
+    {% for n in notifications %}
+    <div style="border-left: 4px solid {% if n.level == 'danger' %}#ef4444{% else %}#f59e0b{% endif %}; background: #f9fafb; padding: 12px 16px; margin-bottom: 12px; border-radius: 4px;">
+        <p style="margin: 0 0 4px 0; font-weight: 600; color: {% if n.level == 'danger' %}#b91c1c{% else %}#b45309{% endif %};">{{ n.title }}</p>
+        <p style="margin: 0; font-size: 14px; color: #374151;">{{ n.message }}</p>
+    </div>
+    {% endfor %}
+    <p style="font-size: 12px; color: #6b7280; margin-top: 24px;">
+        You received this email because email alerts are enabled in your Expense Tracker settings.
+    </p>
+</body>
+</html>
+

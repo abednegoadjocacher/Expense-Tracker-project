@@ -1,0 +1,19 @@
+{% load expense_tags %}
+{% if page_obj.has_other_pages %}
+<div class="flex justify-center mt-4">
+    <div class="join">
+        {% if page_obj.has_previous %}
+            <a class="join-item btn btn-sm" href="?page={{ page_obj.previous_page_number }}{% querystring_without 'page' %}">«</a>
+        {% else %}
+            <button class="join-item btn btn-sm btn-disabled">«</button>
+        {% endif %}
+        <span class="join-item btn btn-sm no-animation">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a class="join-item btn btn-sm" href="?page={{ page_obj.next_page_number }}{% querystring_without 'page' %}">»</a>
+        {% else %}
+            <button class="join-item btn btn-sm btn-disabled">»</button>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+

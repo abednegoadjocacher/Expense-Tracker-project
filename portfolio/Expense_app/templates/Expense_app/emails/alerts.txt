@@ -1,0 +1,11 @@
+Hello {{ user.first_name|default:user.username }},
+
+You have {{ notifications|length }} new spending alert{{ notifications|length|pluralize }} in Expense Tracker:
+{% for n in notifications %}
+- {{ n.title }}
+  {{ n.message }}
+{% endfor %}
+Sign in to review your categories and budgets.
+
+— Expense Tracker
+

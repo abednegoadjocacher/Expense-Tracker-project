@@ -1,0 +1,131 @@
+{% extends "Expense_app/base.html" %}
+{% load expense_tags %}
+{% block title %}Planned expenses{% endblock title %}
+
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold">Planned expenses</h1>
+        <p class="text-sm text-base-content/60">Schedule upcoming or recurring bills and convert them to expenses when paid.</p>
+    </div>
+    <a href="{% url 'plan_create' %}" class="btn btn-primary btn-sm">+ Plan an expense</a>
+</div>
+
+<section class="stats stats-vertical sm:stats-horizontal shadow-sm bg-base-100 w-full mb-6">
+    <div class="stat">
+        <div class="stat-title">Due this month ({{ today|date:"F" }})</div>
+        <div class="stat-value text-2xl text-primary">{% money due_this_month %}</div>
+        <div class="stat-desc">Remaining planned spend for {{ today|date:"F Y" }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-title">Upcoming plans</div>
+        <div class="stat-value text-2xl">{{ active_plans|length }}</div>
+        <div class="stat-desc">
+            {% if overdue_count %}
+                <span class="text-error font-semibold">{{ overdue_count }} overdue</span>
+            {% else %}
+                All on schedule
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<div class="card bg-base-100 shadow-sm overflow-x-auto mb-6">
+    <div class="card-body p-4 pb-0">
+        <h2 class="card-title text-lg">Upcoming &amp; recurring</h2>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Due date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th class="hidden sm:table-cell">Frequency</th>
+                <th class="text-right">Amount</th>
+                <th class="w-px"></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for p in active_plans %}
+            <tr class="hover:bg-base-200/50">
+                <td class="whitespace-nowrap">
+                    <span class="{% if p.is_overdue %}text-error font-semibold{% endif %}">{{ p.due_date|date:"j M Y" }}</span>
+                    {% if p.is_overdue %}
+                        <span class="badge badge-error badge-xs ml-1">Overdue</span>
+                    {% elif p.due_date == today %}
+                        <span class="badge badge-warning badge-xs ml-1">Today</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="font-medium">{{ p.title }}</span>
+                    {% if p.notes %}<p class="text-xs opacity-60 line-clamp-1">{{ p.notes }}</p>{% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-ghost gap-1 whitespace-nowrap">
+                        <span class="inline-block w-2 h-2 rounded-full" style="background-color: {{ p.category.color }}"></span>
+                        {{ p.category.name }}
+                    </span>
+                </td>
+                <td class="hidden sm:table-cell text-sm opacity-70">{{ p.get_recurrence_display }}</td>
+                <td class="text-right font-semibold whitespace-nowrap">{% money p.amount %}</td>
+                <td class="whitespace-nowrap">
+                    <div class="flex items-center gap-1 justify-end">
+                        <form method="post" action="{% url 'plan_mark_paid' p.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'plan_list' %}">
+                            <button type="submit" class="btn btn-xs btn-success btn-outline" title="Record as an expense">Mark paid</button>
+                        </form>
+                        <a href="{% url 'plan_edit' p.pk %}" class="btn btn-ghost btn-xs">Edit</a>
+                        <a href="{% url 'plan_delete' p.pk %}" class="btn btn-ghost btn-xs text-error">Delete</a>
+                    </div>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-10 opacity-60">
+                    No active plans yet. <a href="{% url 'plan_create' %}" class="link link-primary">Plan your next bill or subscription</a>.
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if completed_plans %}
+<div class="card bg-base-100 shadow-sm overflow-x-auto">
+    <div class="card-body p-4 pb-0">
+        <h2 class="card-title text-base text-base-content/70">Recently completed one-off plans</h2>
+    </div>
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Due date</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th class="text-right">Amount</th>
+                <th class="w-px"></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for p in completed_plans %}
+            <tr class="opacity-70">
+                <td class="whitespace-nowrap">{{ p.due_date|date:"j M Y" }}</td>
+                <td class="line-through">{{ p.title }}</td>
+                <td>
+                    <span class="badge badge-ghost badge-sm gap-1">
+                        <span class="inline-block w-2 h-2 rounded-full" style="background-color: {{ p.category.color }}"></span>
+                        {{ p.category.name }}
+                    </span>
+                </td>
+                <td class="text-right whitespace-nowrap">{% money p.amount %}</td>
+                <td class="whitespace-nowrap">
+                    <a href="{% url 'plan_delete' p.pk %}" class="btn btn-ghost btn-xs text-error">Delete</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock content %}
+

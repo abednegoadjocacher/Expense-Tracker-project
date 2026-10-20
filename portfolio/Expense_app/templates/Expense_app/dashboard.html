@@ -1,0 +1,239 @@
+{% extends "Expense_app/base.html" %}
+{% load expense_tags %}
+{% block title %}Dashboard{% endblock title %}
+
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-2 mb-6">
+    <div>
+        <h1 class="text-2xl sm:text-3xl font-bold">Hello, {{ user.first_name|default:user.username }} 👋</h1>
+        <p class="text-base-content/60">{{ today|date:"l, j F Y" }} — here's where your money is going.</p>
+    </div>
+    <a href="{% url 'reports' %}" class="btn btn-ghost btn-sm">Full reports →</a>
+</div>
+
+{% if not has_categories %}
+<div class="alert alert-info mb-6">
+    <span>You don't have any categories yet. <a class="link font-semibold" href="{% url 'category_create' %}">Create one</a> to start tracking.</span>
+</div>
+{% endif %}
+
+{# ---------- High-spending alerts ---------- #}
+{% if flagged_stats or budget_status == 'over' or budget_status == 'warning' %}
+<section class="card bg-base-100 border-l-4 border-warning shadow-sm mb-6" aria-labelledby="attention-heading">
+    <div class="card-body py-4">
+        <h2 id="attention-heading" class="card-title text-base">⚠️ Categories with higher spending this month</h2>
+        <ul class="space-y-2">
+            {% if budget_status == 'over' %}
+                <li class="flex flex-wrap items-center gap-2"><span class="badge badge-error">Over budget</span> Overall: {% money month_total %} of {% money profile.monthly_budget %} ({{ budget_pct|floatformat:0 }}%)</li>
+            {% elif budget_status == 'warning' %}
+                <li class="flex flex-wrap items-center gap-2"><span class="badge badge-warning">{{ budget_pct|floatformat:0 }}% used</span> Overall: {% money month_total %} of {% money profile.monthly_budget %}</li>
+            {% endif %}
+            {% for s in flagged_stats %}
+            <li class="flex flex-wrap items-center gap-2">
+                <span class="inline-block w-3 h-3 rounded-full" style="background-color: {{ s.category.color }}"></span>
+                <a href="{% url 'expense_list' %}?category={{ s.category.pk }}&start={{ today|date:'Y-m' }}-01" class="font-medium link link-hover">{{ s.category.name }}</a>
+                <span>{% money s.total %}</span>
+                {% if s.status == 'over' %}<span class="badge badge-error badge-sm">Over budget · {{ s.budget_pct|floatformat:0 }}%</span>
+                {% elif s.status == 'warning' %}<span class="badge badge-warning badge-sm">{{ s.budget_pct|floatformat:0 }}% of budget</span>{% endif %}
+                {% if s.is_spike %}<span class="badge badge-info badge-sm">Higher than usual (avg {% money s.average %})</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endif %}
+
+{# ---------- Headline stats ---------- #}
+<section class="stats stats-vertical sm:stats-horizontal shadow-sm bg-base-100 w-full mb-6">
+    <div class="stat">
+        <div class="stat-title">Total spent (all time)</div>
+        <div class="stat-value text-primary text-2xl lg:text-3xl">{% money all_time_total %}</div>
+        <div class="stat-desc">Across {{ all_time_stats|length }} categor{{ all_time_stats|length|pluralize:"y,ies" }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-title">This month</div>
+        <div class="stat-value text-2xl lg:text-3xl">{% money month_total %}</div>
+        <div class="stat-desc">
+            {% if month_change_pct is not None %}
+                <span class="{% if month_change_pct > 0 %}text-error{% else %}text-success{% endif %}">{% if month_change_pct > 0 %}↑{% else %}↓{% endif %} {{ month_change_pct|floatformat:0|cut:"-" }}%</span> vs last month ({% money last_month_total %})
+            {% else %}No spending last month to compare{% endif %}
+        </div>
+    </div>
+    <div class="stat">
+        <div class="stat-title">Today</div>
+        <div class="stat-value text-2xl lg:text-3xl">{% money today_total %}</div>
+        <div class="stat-desc">{{ today|date:"D j M" }}</div>
+    </div>
+    <div class="stat">
+        <div class="stat-title">Monthly budget</div>
+        {% if profile.monthly_budget %}
+            <div class="stat-value text-2xl lg:text-3xl {% if budget_status == 'over' %}text-error{% endif %}">{% money profile.monthly_budget %}</div>
+            <div class="stat-desc">
+                <progress class="progress {{ budget_status|budget_class }} w-full" value="{{ budget_pct|clamp_pct|stringformat:'.1f' }}" max="100"></progress>
+                {{ budget_pct|floatformat:0 }}% used · projected {% money projected_total %}
+            </div>
+        {% else %}
+            <div class="stat-value text-lg"><a href="{% url 'settings' %}" class="link link-primary">Set a budget</a></div>
+            <div class="stat-desc">Projected: {% money projected_total %} incl. plans</div>
+        {% endif %}
+    </div>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    {# ---------- This month by category ---------- #}
+    <section class="card bg-base-100 shadow-sm lg:col-span-2">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <h2 class="card-title">Spending by category — {{ today|date:"F" }}</h2>
+                <a href="{% url 'category_list' %}" class="link link-primary text-sm">Manage</a>
+            </div>
+            {% if month_spent_stats or month_stats %}
+            <div class="flex flex-col md:flex-row gap-6 items-center">
+                <div class="relative w-40 h-40 shrink-0 rounded-full" style="background: {{ donut }}" role="img" aria-label="Category share chart">
+                    <div class="absolute inset-6 rounded-full bg-base-100 flex flex-col items-center justify-center text-center">
+                        <span class="text-xs opacity-60">This month</span>
+                        <span class="font-bold">{% money month_total 0 %}</span>
+                    </div>
+                </div>
+                <ul class="w-full space-y-3">
+                    {% for s in month_stats %}
+                    {% if s.count or s.budget %}
+                    <li>
+                        <div class="flex items-center justify-between gap-2 text-sm">
+                            <span class="flex items-center gap-2 min-w-0">
+                                <span class="inline-block w-3 h-3 rounded-full shrink-0" style="background-color: {{ s.category.color }}"></span>
+                                <span class="truncate">{{ s.category.name }}</span>
+                                {% if s.is_flagged %}<span class="badge badge-xs {% if s.status == 'over' %}badge-error{% else %}badge-warning{% endif %}">high</span>{% endif %}
+                            </span>
+                            <span class="whitespace-nowrap">
+                                <span class="font-semibold">{% money s.total %}</span>
+                                {% if s.budget %}<span class="opacity-60"> / {% money s.budget %}</span>{% else %}<span class="opacity-60"> · {{ s.share|floatformat:0 }}%</span>{% endif %}
+                            </span>
+                        </div>
+                        {% if s.budget %}
+                            <progress class="progress {{ s.status|budget_class }} w-full h-2" value="{{ s.budget_pct|clamp_pct|stringformat:'.1f' }}" max="100"></progress>
+                        {% else %}
+                            <div class="w-full bg-base-200 rounded-full h-2"><div class="h-2 rounded-full" style="width: {{ s.share|clamp_pct|stringformat:'.1f' }}%; background-color: {{ s.category.color }}"></div></div>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if not month_spent_stats %}<li class="text-sm opacity-60">No expenses yet this month.</li>{% endif %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    {# ---------- Quick add ---------- #}
+    <section class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Quick add</h2>
+            {% if has_categories %}
+            <form method="post" action="{% url 'expense_quick_add' %}" class="space-y-1" novalidate>
+                {% csrf_token %}
+                {% for field in quick_form %}
+                    {% include "Expense_app/partials/_field.html" with field=field %}
+                {% endfor %}
+                <button type="submit" class="btn btn-primary w-full mt-3">Add expense</button>
+            </form>
+            {% else %}
+                <a href="{% url 'category_create' %}" class="btn btn-outline">Create a category</a>
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+{# ---------- Daily trend ---------- #}
+<section class="card bg-base-100 shadow-sm mb-6">
+    <div class="card-body">
+        <h2 class="card-title">Daily spending — last 30 days</h2>
+        <div class="flex items-end gap-[2px] sm:gap-1 h-40 mt-2" role="img" aria-label="Bar chart of daily spending">
+            {% for d in daily %}
+            <div class="flex-1 h-full flex items-end tooltip" data-tip="{{ d.date|date:'D j M' }}: {% money d.total %}">
+                <div class="w-full rounded-t {% if d.date == today %}bg-secondary{% else %}bg-primary/70{% endif %}" style="height: {% if d.total %}{{ d.height|stringformat:'.1f' }}%; min-height: 3px{% else %}2px; opacity: .2{% endif %}"></div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="flex justify-between text-xs opacity-60">
+            <span>{{ daily.0.date|date:"j M" }}</span><span>Today</span>
+        </div>
+    </div>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# ---------- All-time totals by category ---------- #}
+    <section class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title">Total by category (all time)</h2>
+            {% if all_time_stats %}
+            <table class="table table-sm">
+                <tbody>
+                {% for s in all_time_stats %}
+                    <tr>
+                        <td><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background-color: {{ s.category.color }}"></span>{{ s.category.name }}</td>
+                        <td class="text-right font-medium">{% money s.total %}</td>
+                        <td class="text-right opacity-60 w-12">{{ s.share|floatformat:0 }}%</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+                <tfoot><tr><th>Total</th><th class="text-right">{% money all_time_total %}</th><th></th></tr></tfoot>
+            </table>
+            {% else %}<p class="opacity-60 text-sm">No expenses recorded yet.</p>{% endif %}
+        </div>
+    </section>
+
+    {# ---------- Recent expenses ---------- #}
+    <section class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <h2 class="card-title">Recent expenses</h2>
+                <a href="{% url 'expense_list' %}" class="link link-primary text-sm">See all</a>
+            </div>
+            <ul class="divide-y divide-base-200">
+                {% for e in recent_expenses %}
+                <li class="py-2 flex items-center justify-between gap-2">
+                    <a href="{% url 'expense_edit' e.pk %}" class="min-w-0">
+                        <p class="truncate font-medium">{{ e.description }}</p>
+                        <p class="text-xs opacity-60"><span class="inline-block w-2 h-2 rounded-full" style="background-color: {{ e.category.color }}"></span> {{ e.category.name }} · {{ e.date|date:"j M" }}</p>
+                    </a>
+                    <span class="font-semibold whitespace-nowrap">{% money e.amount %}</span>
+                </li>
+                {% empty %}
+                <li class="py-2 text-sm opacity-60">Nothing yet — add your first expense.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+
+    {# ---------- Upcoming plans ---------- #}
+    <section class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+            <div class="flex items-center justify-between">
+                <h2 class="card-title">Upcoming (30 days)</h2>
+                <a href="{% url 'plan_create' %}" class="link link-primary text-sm">Plan</a>
+            </div>
+            <ul class="divide-y divide-base-200">
+                {% for p in upcoming_plans %}
+                <li class="py-2 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="truncate font-medium">{{ p.title }}</p>
+                        <p class="text-xs {% if p.is_overdue %}text-error{% else %}opacity-60{% endif %}">{% if p.is_overdue %}Overdue · {% endif %}{{ p.due_date|date:"D j M" }} · {{ p.get_recurrence_display }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold whitespace-nowrap">{% money p.amount %}</span>
+                        <form method="post" action="{% url 'plan_mark_paid' p.pk %}">{% csrf_token %}
+                            <input type="hidden" name="next" value="{% url 'dashboard' %}">
+                            <button class="btn btn-xs btn-success btn-outline" title="Record as paid">Paid</button>
+                        </form>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="py-2 text-sm opacity-60">No upcoming plans. Plan rent, bills or subscriptions so nothing surprises you.</li>
+                {% endfor %}
+            </ul>
+            {% if planned_remaining %}<p class="text-sm mt-2">Still to pay this month: <span class="font-semibold">{% money planned_remaining %}</span></p>{% endif %}
+        </div>
+    </section>
+</div>
+{% endblock content %}

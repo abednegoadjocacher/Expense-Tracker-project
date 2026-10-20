@@ -1,0 +1,29 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Recovery codes and sensitive files
+recovery_code.txt
+recovery_code*.txt
+*recovery*.txt
+
+# Python virtual environments
+env/
+.venv/
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Django local database
+db.sqlite3
+
+# Django uploaded files (optional)
+media/
+
+# IDE and operating system files
+.vscode/
+.DS_Store
+Thumbs.db

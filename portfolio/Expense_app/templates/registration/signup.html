@@ -1,0 +1,29 @@
+{% extends "Expense_app/base.html" %}
+{% block title %}Create an account{% endblock title %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-6">
+    <div class="card bg-base-100 shadow-sm">
+        <form method="post" class="card-body space-y-2" novalidate>
+            {% csrf_token %}
+            <h1 class="card-title text-2xl">Create your account</h1>
+            <p class="text-sm text-base-content/60">Start tracking daily expenses, budgets, and alerts in seconds.</p>
+
+            {% for error in form.non_field_errors %}
+                <div class="alert alert-error text-sm">{{ error }}</div>
+            {% endfor %}
+
+            {% for field in form %}
+                {% include "Expense_app/partials/_field.html" with field=field %}
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary w-full mt-3">Sign up</button>
+
+            <p class="text-center text-sm text-base-content/70 pt-2">
+                Already have an account? <a href="{% url 'login' %}" class="link link-primary font-medium">Log in</a>
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+

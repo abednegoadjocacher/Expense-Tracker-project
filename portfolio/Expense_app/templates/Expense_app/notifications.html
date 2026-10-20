@@ -1,0 +1,71 @@
+{% extends "Expense_app/base.html" %}
+{% block title %}Notifications{% endblock title %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">Spending alerts &amp; notifications</h1>
+            <p class="text-sm text-base-content/60">
+                Alerts when categories exceed their budget threshold or spike above your recent average.
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'settings' %}" class="btn btn-sm btn-ghost">Alert settings</a>
+            {% if unread_notifications_count %}
+            <form method="post" action="{% url 'notification_mark_all_read' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline">Mark all as read</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="space-y-3">
+        {% for n in page_obj %}
+        <article class="card bg-base-100 shadow-sm border-l-4 {% if n.level == 'danger' %}border-error{% elif n.level == 'warning' %}border-warning{% else %}border-info{% endif %} {% if n.is_read %}opacity-75{% endif %}">
+            <div class="card-body p-4 sm:p-5 flex-row items-start justify-between gap-4">
+                <div class="space-y-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        {% if not n.is_read %}
+                            <span class="badge badge-xs badge-primary">Unread</span>
+                        {% endif %}
+                        <h2 class="font-semibold text-base {% if n.level == 'danger' %}text-error{% elif n.level == 'warning' %}text-warning{% endif %}">
+                            {{ n.title }}
+                        </h2>
+                        <span class="text-xs text-base-content/50">· {{ n.created_at|timesince }} ago</span>
+                    </div>
+                    <p class="text-sm text-base-content/80">{{ n.message }}</p>
+                    {% if n.category %}
+                        <div class="pt-1">
+                            <a href="{% url 'expense_list' %}?category={{ n.category.pk }}" class="link link-primary text-xs">
+                                View {{ n.category.name }} expenses →
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                {% if not n.is_read %}
+                <form method="post" action="{% url 'notification_mark_read' n.pk %}" class="shrink-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-xs btn-ghost">Mark read</button>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+        {% empty %}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body text-center py-12">
+                <p class="text-lg font-medium">No notifications yet 🎉</p>
+                <p class="text-sm text-base-content/60 max-w-md mx-auto">
+                    When a category approaches or exceeds its monthly budget, or spending spikes above your recent average, you'll be notified here.
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% include "Expense_app/partials/_pagination.html" %}
+</div>
+{% endblock content %}
+

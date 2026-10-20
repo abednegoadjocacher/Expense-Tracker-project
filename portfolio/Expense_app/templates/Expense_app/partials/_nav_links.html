@@ -1,0 +1,8 @@
+{% with name=request.resolver_match.url_name %}
+<li><a href="{% url 'dashboard' %}" class="{% if name == 'dashboard' %}menu-active{% endif %}">Dashboard</a></li>
+<li><a href="{% url 'expense_list' %}" class="{% if name|slice:':7' == 'expense' %}menu-active{% endif %}">Expenses</a></li>
+<li><a href="{% url 'category_list' %}" class="{% if name|slice:':8' == 'category' %}menu-active{% endif %}">Categories</a></li>
+<li><a href="{% url 'plan_list' %}" class="{% if name|slice:':4' == 'plan' %}menu-active{% endif %}">Plans</a></li>
+<li><a href="{% url 'reports' %}" class="{% if name == 'reports' %}menu-active{% endif %}">Reports</a></li>
+{% endwith %}
+
